@@ -1,90 +1,24 @@
-#-------------------------------------------------------------
-
-Qt / CMake‑based C++ project – ignore list
-
-(covers Qt Creator, CLion, VS Code, MSYS2/MinGW and Ninja)
-
-#-------------------------------------------------------------
-
----------- build artefacts ----------
-
-CMake / Ninja out‑of‑source build folders
-
-build*/
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
+# --- Qt / CMake ---
+/build*
+/CMakeFiles/
+/CMakeCache.txt
 Makefile
+*.user
 
-MSVC solution / makefile generators
-
-*.sln
-.vcxproj
-
-Compiled object & library files
-
+# --- MSVC / MinGW ---
 *.obj
-*.o
-*.lo
-*.a
-*.lib
-*.dll
-*.so
-*.dylib
-
-Executables
-
 *.exe
-*.out
-*.app
+*.dll
+*.pdb
+*.ilk
 
-Autogen / moc / rcc / uic
-
-*_autogen/
-plugin_import.cpp
-mocs_compilation.cpp
-qrc.cpp
-
-Qt Creator & qmake extras
-
-.pro.user
-.qbs.user
-.creator.
+# --- Qt Creator —
 *.autosave
+*.pro.user
+*.pro.user.*
+*.qmlproject.user
+*.designer
 
-CLion / IntelliJ
-
-.idea/
-
-VS Code & clangd
-
-.vscode/
-.clangd
-
-Qt resource binary caches
-
-*.rcc
-
-Logs & generated docs
-
-*.log
-*.tmp
-*.cache
-/doc/html/
-/doc/latex/
-
-User data
-
-*.db
-*.json.backup
-
-System/OS
-
+# --- OS ---
 .DS_Store
 Thumbs.db
-
-Optional: ignore test data, large assets – keep only source files
-
-/assets/models/
-
-/assets/images/
