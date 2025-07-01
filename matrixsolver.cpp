@@ -1,13 +1,16 @@
 #include "MatrixSolver.h"
 #include <cmath>
-#include <stdexcept>
-#include <QString>
-#include <limits>
 
 QString MatrixSolver::formatMatrix(const QVector<QVector<double>>& matrix,
                                    const QVector<double>& freeTerms) {
+    if (matrix.isEmpty() || freeTerms.isEmpty() || matrix.size() != freeTerms.size()) {
+        return "Invalid matrix format";
+    }
+
     QString output;
     for (int i = 0; i < matrix.size(); ++i) {
+        if (matrix[i].size() == 0) continue;
+
         output += "| ";
         for (int j = 0; j < matrix[i].size(); ++j) {
             output += QString::number(matrix[i][j], 'f', 4) + "\t";
@@ -18,8 +21,9 @@ QString MatrixSolver::formatMatrix(const QVector<QVector<double>>& matrix,
 }
 
 QString MatrixSolver::formatVector(const QVector<double>& vec) {
-    QString output;
-    output += "[ ";
+    if (vec.isEmpty()) return "[]";
+
+    QString output = "[ ";
     for (int i = 0; i < vec.size(); ++i) {
         output += QString::number(vec[i], 'f', 4);
         if (i < vec.size() - 1) output += ", ";
@@ -29,37 +33,50 @@ QString MatrixSolver::formatVector(const QVector<double>& vec) {
 }
 
 bool MatrixSolver::solveSystem(Method method,
-                               QVector<QVector<double>>& matrix,
-                               QVector<double>& freeTerms,
+                               const QVector<QVector<double>>& inputMatrix,
+                               const QVector<double>& inputFreeTerms,
                                QVector<double>& results,
                                QStringList* steps) {
+    // Очищаем результаты и шаги перед началом
+    results.clear();
+    if (steps) steps->clear();
+
+    // Проверка базовых условий
+    if (inputMatrix.isEmpty() || inputFreeTerms.isEmpty() ||
+        inputMatrix.size() != inputFreeTerms.size()) {
+        if (steps) steps->append("Invalid input: matrix or free terms are empty or sizes mismatch");
+        return false;
+    }
+
     switch (method) {
     case Gauss:
-        return solveGauss(matrix, freeTerms, results, steps);
+        return solveGauss(inputMatrix, inputFreeTerms, results, steps);
     case JordanGauss:
-        return solveJordanGauss(matrix, freeTerms, results, steps);
+        return solveJordanGauss(inputMatrix, inputFreeTerms, results, steps);
     case Cramer:
-        return solveCramer(matrix, freeTerms, results, steps);
+        return solveCramer(inputMatrix, inputFreeTerms, results, steps);
     case InverseMatrix:
-        return solveInverseMatrix(matrix, freeTerms, results, steps);
+        return solveInverseMatrix(inputMatrix, inputFreeTerms, results, steps);
     case LeastSquares:
-        return solveLeastSquares(matrix, freeTerms, results, steps);
+        return solveLeastSquares(inputMatrix, inputFreeTerms, results, steps);
     default:
-        if (steps) steps->append("Неизвестный метод решения");
+        if (steps) steps->append("Unknown solving method");
         return false;
     }
 }
 
-bool MatrixSolver::solveGauss(QVector<QVector<double>>& matrix,
-                              QVector<double>& freeTerms,
+bool MatrixSolver::solveGauss(QVector<QVector<double>> matrix,
+                              QVector<double> freeTerms,
                               QVector<double>& results,
                               QStringList* steps) {
     const int n = matrix.size();
     if (n == 0 || n != freeTerms.size()) return false;
 
-    if (steps) steps->append("Метод Гаусса:");
-    if (steps) steps->append("Начальная система:");
-    if (steps) steps->append(formatMatrix(matrix, freeTerms));
+    if (steps) {
+        steps->append("Метод Гаусса:");
+        steps->append("Начальная система:");
+        steps->append(formatMatrix(matrix, freeTerms));
+    }
 
     // Прямой ход
     for (int i = 0; i < n; ++i) {
@@ -137,16 +154,18 @@ bool MatrixSolver::solveGauss(QVector<QVector<double>>& matrix,
     return true;
 }
 
-bool MatrixSolver::solveJordanGauss(QVector<QVector<double>>& matrix,
-                                    QVector<double>& freeTerms,
+bool MatrixSolver::solveJordanGauss(QVector<QVector<double>> matrix,
+                                    QVector<double> freeTerms,
                                     QVector<double>& results,
                                     QStringList* steps) {
     const int n = matrix.size();
     if (n == 0 || n != freeTerms.size()) return false;
 
-    if (steps) steps->append("Метод Жордана-Гаусса:");
-    if (steps) steps->append("Начальная система:");
-    if (steps) steps->append(formatMatrix(matrix, freeTerms));
+    if (steps) {
+        steps->append("Метод Жордана-Гаусса:");
+        steps->append("Начальная система:");
+        steps->append(formatMatrix(matrix, freeTerms));
+    }
 
     for (int i = 0; i < n; ++i) {
         // Поиск опорного элемента
@@ -259,8 +278,8 @@ double MatrixSolver::determinant(QVector<QVector<double>> matrix) {
     return det;
 }
 
-bool MatrixSolver::solveCramer(QVector<QVector<double>>& matrix,
-                               QVector<double>& freeTerms,
+bool MatrixSolver::solveCramer(const QVector<QVector<double>>& matrix,
+                               const QVector<double>& freeTerms,
                                QVector<double>& results,
                                QStringList* steps) {
     const int n = matrix.size();
@@ -317,8 +336,12 @@ bool MatrixSolver::solveCramer(QVector<QVector<double>>& matrix,
     return true;
 }
 
-QVector<QVector<double>> MatrixSolver::inverseMatrix(QVector<QVector<double>> matrix) {
-    const int n = matrix.size();
+QVector<QVector<double>> MatrixSolver::inverseMatrix(const QVector<QVector<double>>& inputMatrix) {
+    const int n = inputMatrix.size();
+    if (n == 0) return {};
+
+    // Создаем копию для работы
+    QVector<QVector<double>> matrix = inputMatrix;
     QVector<QVector<double>> inverse(n, QVector<double>(n, 0.0));
 
     // Создаем расширенную матрицу [A|I]
@@ -340,6 +363,11 @@ QVector<QVector<double>> MatrixSolver::inverseMatrix(QVector<QVector<double>> ma
         if (maxRow != i) {
             std::swap(matrix[i], matrix[maxRow]);
             std::swap(inverse[i], inverse[maxRow]);
+        }
+
+        // Проверка на вырожденность
+        if (std::abs(matrix[i][i]) < 1e-10) {
+            return {}; // Матрица вырождена
         }
 
         // Нормализация строки
@@ -364,8 +392,8 @@ QVector<QVector<double>> MatrixSolver::inverseMatrix(QVector<QVector<double>> ma
     return inverse;
 }
 
-bool MatrixSolver::solveInverseMatrix(QVector<QVector<double>>& matrix,
-                                      QVector<double>& freeTerms,
+bool MatrixSolver::solveInverseMatrix(const QVector<QVector<double>>& matrix,
+                                      const QVector<double>& freeTerms,
                                       QVector<double>& results,
                                       QStringList* steps) {
     const int n = matrix.size();
@@ -384,6 +412,11 @@ bool MatrixSolver::solveInverseMatrix(QVector<QVector<double>>& matrix,
 
     // Вычисление обратной матрицы
     QVector<QVector<double>> inv = inverseMatrix(matrix);
+
+    if (inv.isEmpty()) {
+        if (steps) steps->append("Ошибка при вычислении обратной матрицы");
+        return false;
+    }
 
     if (steps) {
         steps->append("Обратная матрица:");
@@ -415,13 +448,16 @@ bool MatrixSolver::solveInverseMatrix(QVector<QVector<double>>& matrix,
 }
 
 QVector<QVector<double>> MatrixSolver::transposeMatrix(const QVector<QVector<double>>& matrix) {
+    if (matrix.isEmpty()) return {};
+
     const int rows = matrix.size();
-    if (rows == 0) return {};
     const int cols = matrix[0].size();
 
     QVector<QVector<double>> transposed(cols, QVector<double>(rows));
 
     for (int i = 0; i < rows; ++i) {
+        if (matrix[i].size() != cols) continue; // Пропуск некорректных строк
+
         for (int j = 0; j < cols; ++j) {
             transposed[j][i] = matrix[i][j];
         }
@@ -432,18 +468,23 @@ QVector<QVector<double>> MatrixSolver::transposeMatrix(const QVector<QVector<dou
 
 QVector<QVector<double>> MatrixSolver::multiplyMatrices(const QVector<QVector<double>>& A,
                                                         const QVector<QVector<double>>& B) {
+    if (A.isEmpty() || B.isEmpty()) return {};
+
     const int rowsA = A.size();
-    if (rowsA == 0) return {};
     const int colsA = A[0].size();
     const int rowsB = B.size();
-    if (rowsB == 0 || colsA != rowsB) return {};
     const int colsB = B[0].size();
+
+    if (colsA != rowsB) return {};
 
     QVector<QVector<double>> result(rowsA, QVector<double>(colsB, 0.0));
 
     for (int i = 0; i < rowsA; ++i) {
+        if (A[i].size() != colsA) continue; // Пропуск некорректных строк
+
         for (int j = 0; j < colsB; ++j) {
             for (int k = 0; k < colsA; ++k) {
+                if (k >= rowsB || j >= B[k].size()) continue; // Проверка границ
                 result[i][j] += A[i][k] * B[k][j];
             }
         }
@@ -452,18 +493,24 @@ QVector<QVector<double>> MatrixSolver::multiplyMatrices(const QVector<QVector<do
     return result;
 }
 
-bool MatrixSolver::solveLeastSquares(QVector<QVector<double>>& matrix,
-                                     QVector<double>& freeTerms,
+bool MatrixSolver::solveLeastSquares(const QVector<QVector<double>>& matrix,
+                                     const QVector<double>& freeTerms,
                                      QVector<double>& results,
                                      QStringList* steps) {
     const int m = matrix.size(); // Количество уравнений
     if (m == 0) return false;
+
     const int n = matrix[0].size(); // Количество переменных
+    if (n == 0) return false;
 
     if (steps) steps->append("Метод наименьших квадратов:");
 
     // Транспонирование матрицы
     QVector<QVector<double>> A_T = transposeMatrix(matrix);
+    if (A_T.isEmpty() || A_T.size() != n) {
+        if (steps) steps->append("Ошибка транспонирования матрицы");
+        return false;
+    }
 
     if (steps) {
         steps->append("Транспонированная матрица A^T:");
@@ -474,6 +521,10 @@ bool MatrixSolver::solveLeastSquares(QVector<QVector<double>>& matrix,
 
     // Вычисление A^T * A
     QVector<QVector<double>> ATA = multiplyMatrices(A_T, matrix);
+    if (ATA.isEmpty() || ATA.size() != n || ATA[0].size() != n) {
+        if (steps) steps->append("Ошибка при вычислении A^T * A");
+        return false;
+    }
 
     if (steps) {
         steps->append("Матрица A^T * A:");
@@ -485,6 +536,8 @@ bool MatrixSolver::solveLeastSquares(QVector<QVector<double>>& matrix,
     // Вычисление A^T * b
     QVector<double> ATb(n, 0.0);
     for (int i = 0; i < n; ++i) {
+        if (A_T[i].size() != m) continue;
+
         for (int j = 0; j < m; ++j) {
             ATb[i] += A_T[i][j] * freeTerms[j];
         }

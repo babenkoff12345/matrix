@@ -3,8 +3,6 @@
 #include "ui_MainWindow.h"
 #include <QHeaderView>
 #include <QMessageBox>
-#include <iomanip>
-#include <sstream>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -67,6 +65,8 @@ bool MainWindow::getMatrixData(
     const int rows = ui->matrixTable->rowCount();
     const int cols = ui->matrixTable->columnCount() - 1; // Последний столбец - свободные члены
 
+    if (rows == 0 || cols == 0) return false;
+
     matrix.resize(rows);
     freeTerms.resize(rows);
 
@@ -101,6 +101,8 @@ void MainWindow::solveSystem() {
         return;
     }
 
+    // Очищаем предыдущие результаты
+    ui->resultsText->clear();
     QVector<double> results;
     QStringList solutionSteps;
 
@@ -119,11 +121,15 @@ void MainWindow::solveSystem() {
         html += "</table>";
 
         // Добавляем шаги решения
-        html += "<h2>Ход решения:</h2><pre>" + solutionSteps.join("\n") + "</pre>";
+        if (!solutionSteps.isEmpty()) {
+            html += "<h2>Ход решения:</h2><pre>" + solutionSteps.join("\n") + "</pre>";
+        }
         ui->resultsText->setHtml(html);
     } else {
         QString html = "<b>Решение не найдено!</b>";
-        html += "<h2>Ход решения:</h2><pre>" + solutionSteps.join("\n") + "</pre>";
+        if (!solutionSteps.isEmpty()) {
+            html += "<h2>Ход решения:</h2><pre>" + solutionSteps.join("\n") + "</pre>";
+        }
         ui->resultsText->setHtml(html);
     }
 }
